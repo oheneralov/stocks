@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense, LSTM
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import yfinance as yf
@@ -66,24 +66,23 @@ class StockPredictor:
         X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
         return X_train, y_train
 
-    def build_and_train_model(self, X_train, y_train):
+    def build_and_train_model(self, X_train, y_train, epochs=100):
         self.model = Sequential()
-        self.model.add(LSTM(units=50, return_sequences=True, input_shape=(1, 1)))
+        self.model.add(LSTM(units=50, return_sequences=True, input_shape=(60, 1)))
         self.model.add(LSTM(units=50))
         self.model.add(Dense(units=1))
 
         self.model.compile(optimizer='adam', loss='mean_squared_error')
-        self.model.fit(X_train, y_train, epochs=100, batch_size=1, verbose=2)
+        self.model.fit(X_train, y_train, epochs=epochs, batch_size=1, verbose=2)
 
     def predict_future_prices(self, scaled_data, days=7):
         predicted_prices = []
-        last_price = scaled_data[-1, 0]
+        input_data = scaled_data[-60:]
         for _ in range(days):
-            input_data = np.array([[last_price]])
-            input_data = np.reshape(input_data, (1, 1, 1))
+            input_data = np.reshape(input_data, (1, 60, 1))
             predicted_price = self.model.predict(input_data)
             predicted_prices.append(predicted_price[0, 0])
-            last_price = predicted_price[0, 0]
+            input_data = np.append(input_data[0, 1:], predicted_price[0, 0]).reshape(1, 60, 1)
 
         predicted_prices = self.scaler.inverse_transform(np.array(predicted_prices).reshape(-1, 1))
         return predicted_prices
@@ -98,6 +97,8 @@ class StockPredictor:
         plt.legend()
         plt.show()
 
+# Allow the user to input the number of epochs for training the model
+num_epochs = int(input("Enter the number of epochs for training the model: "))
 predictor = StockPredictor()
 # df = predictor.generate_dummy_data()
 # Download historical stock data for NVIDIA from January 1, 2020 to January 1, 2025
@@ -107,14 +108,14 @@ predictor = StockPredictor()
 # end_date: The end date for the historical data in 'YYYY-MM-DD' format
 df = predictor.download_stock_data('NVDA', '2020-01-01', '2025-01-24')
 scaled_data = predictor.normalize_data(df)
-
+# Specify batch_size explicitly
+batch_size = 32
 # Prepare the data for training the neural network
 # time_step defines the number of previous time steps to use for predicting the next time step
 X_train, y_train = predictor.prepare_data(scaled_data, time_step=60)
 
 # Build and train the LSTM neural network model
-predictor.build_and_train_model(X_train, y_train)
+predictor.build_and_train_model(X_train, y_train, epochs=num_epochs)
 predicted_prices = predictor.predict_future_prices(scaled_data)
 predictor.plot_prices(df, predicted_prices)
 print("Predicted prices for the next 7 days:", predicted_prices.flatten())
-
