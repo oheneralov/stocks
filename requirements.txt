@@ -5,5 +5,7 @@ scipy
 scikit-learn
 yfinance
 requests
+h5py
 beautifulsoup4
 lxml
+keras

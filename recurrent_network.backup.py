@@ -92,7 +92,7 @@ class StockPredictor:
         plt.figure(figsize=(10, 6))
         plt.plot(df['prices'], color='blue', label='Actual Prices')
         plt.plot(range(len(df), len(df) + 7), predicted_prices, color='red', label='Predicted Prices')
-        plt.title('Stock Prices Prediction')
+        plt.title('Stock Prices Prediction at Close')
         plt.xlabel('Days')
         plt.ylabel('Prices')
         plt.legend()

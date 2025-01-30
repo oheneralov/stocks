@@ -71,3 +71,4 @@ if __name__ == "__main__":
 
     predicted_price = predict_stock_price(ticker, Day, Month, Year, days_ago)
     print(f"Predicted stock price for {ticker} on {Day}-{Month}-{Year}: ${predicted_price:.2f}")
+    
