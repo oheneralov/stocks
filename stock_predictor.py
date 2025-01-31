@@ -26,6 +26,8 @@ class Stock_Predictor:
         #print('acceptible metrics ', data.head())
         prices = data['Close'].values.ravel()
         volumes = data['Volume'].values.ravel()
+
+        self.first_date = data.index[0].strftime("%Y-%m-%d")
         self.last_date = data.index[-1].strftime("%Y-%m-%d")
         #print('part of prices:', prices[1:5])
         #print('part of volumes:', volumes[1:5])
@@ -43,6 +45,7 @@ class Stock_Predictor:
         prices = prices[2:].astype(float)
         #print('part of prices:', prices[0:10])
         #print('part of volumes:', volumes[0:10])
+        self.first_date = data.index[0].strftime("%Y-%m-%d")
         self.last_date = data.index[-1].strftime("%Y-%m-%d")
 
 
@@ -132,4 +135,7 @@ class Stock_Predictor:
         last_date = pd.to_datetime(self.last_date)
         next_trading_day = last_date + pd.tseries.offsets.BDay()
         return next_trading_day.strftime("%Y-%m-%d")
+
+    def get_trading_range(self):
+        return self.first_date, self.last_date
     

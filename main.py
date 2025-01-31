@@ -33,6 +33,9 @@ test_prices = np.array(prices[-window_size:]).reshape(1, window_size, 1)
 test_volumes = np.array(volumes[-window_size:]).reshape(1, window_size, 1)
 test_prices_scaled, test_volumes_scaled = predictor.scale_test_data(test_prices, test_volumes)
 predicted_price = predictor.predict_next_value(test_prices_scaled, test_volumes_scaled)
+
+first_date, last_date = predictor.get_trading_range()
+print(f'neural network is trained on the range from {first_date} to {last_date}')
 print("\n\n\n----------------------------------------------------")
 print(f'Predicted price: {predicted_price:.2f}$ for {ticker} on {predictor.get_next_trading_day()} Close')
 
