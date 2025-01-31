@@ -11,7 +11,8 @@ ticker = 'NVDA'
 
 predictor = Stock_Predictor(ticker)
 #prices, volumes = predictor.generate_dummy_data()
-prices, volumes = predictor.download_stock_data('2023-01-01', '2025-01-29')
+# end="2025-01-29" in yfinance is exclusive, meaning data won't include January 29.
+prices, volumes = predictor.download_stock_data('2023-01-01', '2025-01-30')
 #prices, volumes = predictor.read_stock_data_from_csv()
 print('number of days:', len(prices))
 print(f'epochs: {epochs}, ticker: {ticker}, window_size: {window_size}')
@@ -33,4 +34,7 @@ test_volumes = np.array(volumes[-window_size:]).reshape(1, window_size, 1)
 test_prices_scaled, test_volumes_scaled = predictor.scale_test_data(test_prices, test_volumes)
 predicted_price = predictor.predict_next_value(test_prices_scaled, test_volumes_scaled)
 print("\n\n\n----------------------------------------------------")
-print(f'Predicted price: {predicted_price} for {ticker} on {predictor.get_next_trading_day()} Close')
+print(f'Predicted price: {predicted_price:.2f}$ for {ticker} on {predictor.get_next_trading_day()} Close')
+
+# Predicted price: 126.29 for NVDA on 29 January 2025 Close
+

@@ -13,7 +13,7 @@ class Stock_Predictor:
         self.scaler_y = MinMaxScaler(feature_range=(0, 1))
         self.ticker = ticker
         self.model = None
-        self.data = None
+        self.last_date = None
 
     def set_window_size(self, window_size):
         self.window_size = window_size
@@ -26,7 +26,7 @@ class Stock_Predictor:
         #print('acceptible metrics ', data.head())
         prices = data['Close'].values.ravel()
         volumes = data['Volume'].values.ravel()
-        self.data = data
+        self.last_date = data.index[-1].strftime("%Y-%m-%d")
         #print('part of prices:', prices[1:5])
         #print('part of volumes:', volumes[1:5])
         # save prices and volumes to csv
@@ -43,6 +43,8 @@ class Stock_Predictor:
         prices = prices[2:].astype(float)
         #print('part of prices:', prices[0:10])
         #print('part of volumes:', volumes[0:10])
+        self.last_date = data.index[-1].strftime("%Y-%m-%d")
+
 
         return prices, volumes
 
@@ -125,5 +127,9 @@ class Stock_Predictor:
 
     # Returns next trading date
     def get_next_trading_day(self):
-        next_trading_day = self.data.index[-1] + pd.DateOffset(days=1)
-        return next_trading_day.strftime('%d %B %Y')
+        # Get the last available date
+        print('last trading date ',self.last_date)
+        last_date = pd.to_datetime(self.last_date)
+        next_trading_day = last_date + pd.tseries.offsets.BDay()
+        return next_trading_day.strftime("%Y-%m-%d")
+    
