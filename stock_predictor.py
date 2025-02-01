@@ -1,5 +1,6 @@
 import numpy as np
 from tensorflow.keras.models import Model
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input, Concatenate
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
@@ -90,28 +91,39 @@ class Stock_Predictor:
         y_scaled = self.scaler_y.fit_transform(y)
 
         return X_prices_scaled, X_volumes_scaled, y_scaled
+    
+    def merge_data(self, X_prices, X_volumes):
+        return np.concatenate((X_prices, X_volumes), axis=2)
 
     def build_model(self):
-        input_prices = Input(shape=(self.window_size, 1))
-        x1 = LSTM(100, activation='relu', return_sequences=True)(input_prices)
-
-        input_volumes = Input(shape=(self.window_size, 1))
-        x2 = LSTM(100, activation='relu', return_sequences=True)(input_volumes)
-
-        merged = Concatenate()([x1, x2])
-        LSTM2 = LSTM(50, activation='relu', return_sequences=False)(merged)
+        """
+        input_data = Input(shape=(self.window_size, 2))
+        x = LSTM(100, activation='relu', return_sequences=True)(input_data)
+        x = Dropout(0.2)(x)
+        LSTM2 = LSTM(50, activation='relu', return_sequences=False)(x)
         dropout = Dropout(0.2)(LSTM2)
 
         dense_1 = Dense(25, activation='relu')(dropout)
         dropout = Dropout(0.2)(dense_1)
         output = Dense(1)(dropout)
 
-        self.model = Model(inputs=[input_prices, input_volumes], outputs=output)
+        self.model = Model(inputs=input_data, outputs=output)
+        self.model.compile(optimizer='adam', loss='mse')
+        """	
+        
+        self.model = Sequential([
+            LSTM(50, activation='relu', return_sequences=True, input_shape=(self.window_size, 2)),
+            Dropout(0.2),
+            LSTM(50, activation='relu', return_sequences=False),
+            Dropout(0.2),
+            Dense(1)
+        ])
+
         self.model.compile(optimizer='adam', loss='mse')
 
-    def train_model(self, X_prices_scaled, X_volumes_scaled, y_scaled, epochs=500):
+    def train_model(self, params_scaled, y_scaled, epochs=500):
         print('Training model...')
-        self.model.fit([X_prices_scaled, X_volumes_scaled], y_scaled, epochs=epochs, verbose=0)
+        self.model.fit(params_scaled, y_scaled, epochs=epochs, verbose=0)
 
     def scale_test_data(self, test_prices, test_volumes):
         points_num = self.window_size
@@ -121,9 +133,9 @@ class Stock_Predictor:
         test_volumes_scaled = self.scaler_volumes.transform(test_volumes.reshape(-1, 1)).reshape(1, points_num, 1)
         return test_prices_scaled, test_volumes_scaled
 
-    def predict_next_value(self, test_prices_scaled, test_volumes_scaled):
+    def predict_next_value(self, params_scaled):
         # predict
-        predicted_scaled_value = self.model.predict([test_prices_scaled, test_volumes_scaled])
+        predicted_scaled_value = self.model.predict(params_scaled)
         #print('predicted_scaled_value:', predicted_scaled_value.shape)
         predicted_value = self.scaler_y.inverse_transform(predicted_scaled_value)
         return predicted_value[0][0]
