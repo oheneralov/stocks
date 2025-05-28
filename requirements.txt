@@ -9,3 +9,7 @@ h5py
 beautifulsoup4
 lxml
 keras
+tensorflow
+pytest
+transformers
+

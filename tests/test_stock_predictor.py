@@ -1,24 +1,33 @@
 import pytest
 import numpy as np
-from stock_predictor import Stock_Predictor
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from model import Stock_Predictor
+from data_loader import Data_Loader
 
 @pytest.fixture
 def predictor():
-    predictor = Stock_Predictor('NVDA')
+    predictor = Stock_Predictor()
     predictor.set_window_size(3)
     return predictor
 
-def test_generate_dummy_data(predictor):
-    prices, volumes = predictor.generate_dummy_data()
-    assert len(prices) > 0
-    assert len(volumes) > 0
-    assert len(prices) == len(volumes)
+@pytest.fixture
+def data_loader_obj():
+    data_loader = Data_Loader('NVDA', 3)
+    return data_loader
 
-def test_normalize_data(predictor):
-    prices, volumes = predictor.generate_dummy_data()
-    X_prices, X_volumes, y = predictor.normalize_data(prices, volumes)
-    assert X_prices.shape[0] == X_volumes.shape[0] == y.shape[0]
-    assert X_prices.shape[1] == X_volumes.shape[1] == predictor.window_size
+def test_generate_dummy_data(data_loader_obj):
+    open_prices, close_prices, volumes = data_loader_obj.generate_dummy_data()
+    assert len(open_prices) > 0
+    assert len(volumes) > 0
+    assert len(close_prices) == len(volumes)
+
+def test_normalize_data(data_loader_obj):
+    open_prices, close_prices, volumes = data_loader_obj.generate_dummy_data()
+    X_prices_open, X_prices_close, X_volumes, y = data_loader_obj.normalize_data(open_prices, close_prices, volumes)
+    assert X_prices_open.shape[0] == X_volumes.shape[0] == y.shape[0]
+    assert X_prices_open.shape[1] == X_volumes.shape[1] == data_loader_obj.window_size
 
 def test_scale(predictor):
     prices, volumes = predictor.generate_dummy_data()

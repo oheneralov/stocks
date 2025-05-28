@@ -7,16 +7,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
 
-class Stock_Predictor:
-    def __init__(self, ticker):
+class Data_Loader:
+    def __init__(self, ticker, window_size):
         self.scaler_prices = MinMaxScaler(feature_range=(0, 1))
         self.scaler_volumes = MinMaxScaler(feature_range=(0, 1))
         self.scaler_y = MinMaxScaler(feature_range=(0, 1))
         self.ticker = ticker
-        self.model = None
         self.last_date = None
-
-    def set_window_size(self, window_size):
         self.window_size = window_size
 
     # Download historical stock data
@@ -25,7 +22,8 @@ class Stock_Predictor:
 
         data = yf.download(self.ticker, start=start_date, end=end_date)
         #print('acceptible metrics ', data.head())
-        prices = data['Close'].values.ravel()
+        open_prices = data['Open'].values.ravel()
+        close_prices = data['Close'].values.ravel()
         volumes = data['Volume'].values.ravel()
 
         self.first_date = data.index[0].strftime("%Y-%m-%d")
@@ -35,27 +33,30 @@ class Stock_Predictor:
         # save prices and volumes to csv
         #data.to_csv(f'{self.ticker}_data.csv')
 
-        return prices, volumes
+        return open_prices, close_prices, volumes
     
     def read_stock_data_from_csv(self):
         data = pd.read_csv(f'{self.ticker}_data.csv')
-        prices = data['Close'].values.ravel()
+        open_prices = data['Open'].values.ravel()
+        close_prices = data['Close'].values.ravel()
         volumes = data['Volume'].values.ravel()
+
         # remove first element (header)
         volumes = volumes[2:].astype(int)
-        prices = prices[2:].astype(float)
+        open_prices = open_prices[2:].astype(float)
+        close_prices = close_prices[2:].astype(float)
         #print('part of prices:', prices[0:10])
         #print('part of volumes:', volumes[0:10])
         self.first_date = data.index[0].strftime("%Y-%m-%d")
         self.last_date = data.index[-1].strftime("%Y-%m-%d")
 
-
-        return prices, volumes
+        return open_prices, close_prices, volumes
 
     def generate_dummy_data(self):
-        prices = np.array([100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200])
+        open_prices = np.array([100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200])
+        close_prices = np.array([105, 205, 405, 805, 1605, 3205, 6405, 12805, 25605, 51205])
         volumes = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-        return prices, volumes
+        return open_prices, close_prices, volumes
 
     def generate_fibonacci(self, n):
         fib_sequence = [0, 1]
@@ -68,77 +69,47 @@ class Stock_Predictor:
         test_volumes = np.array([1, 1, 1]).reshape(1, 3, 1)
         return test_prices, test_volumes
 
-    def normalize_data(self, prices, volumes):
+    def normalize_data(self, open_prices, close_prices, volumes):
         # convert data to right shape
-        X_prices, X_volumes, y = [], [], []
-        for i in range(len(prices) - self.window_size):
-            X_prices.append(prices[i:i + self.window_size])
+        X_prices_open, X_volumes, y, X_prices_close = [], [], [], []
+        for i in range(len(open_prices) - self.window_size):
+            X_prices_open.append(open_prices[i:i + self.window_size])
+            X_prices_close.append(close_prices[i:i + self.window_size])
             X_volumes.append(volumes[i:i + self.window_size])
-            y.append(prices[i + self.window_size])  # Predict next price
 
-        X_prices = np.array(X_prices).reshape((len(X_prices), self.window_size, 1))
+            y.append(open_prices[i + self.window_size])  # Predictions of next prices
+
+        X_prices_open = np.array(X_prices_open).reshape((len(X_prices_open), self.window_size, 1))
+        X_prices_close = np.array(X_prices_close).reshape((len(X_prices_close), self.window_size, 1))
         X_volumes = np.array(X_volumes).reshape((len(X_volumes), self.window_size, 1))
-        #print('X_prices:', X_prices.shape)
+        #print('X_prices_open:', X_prices_open.shape)
+
         y = np.array(y).reshape(-1, 1)
 
-        return X_prices, X_volumes, y
+        return X_prices_open, X_prices_close, X_volumes, y
 
     # scale data to range 0-1
-    def scale(self, X_prices, X_volumes, y):
+    def scale(self, X_prices_open, X_prices_close, X_volumes, y):
         # scale data
-        X_prices_scaled = self.scaler_prices.fit_transform(X_prices.reshape(-1, 1)).reshape(X_prices.shape)
+        X_prices_open_scaled = self.scaler_prices.fit_transform(X_prices_open.reshape(-1, 1)).reshape(X_prices_open.shape)
+        X_prices_close_scaled = self.scaler_prices.fit_transform(X_prices_close.reshape(-1, 1)).reshape(X_prices_close.shape)
+
         X_volumes_scaled = self.scaler_volumes.fit_transform(X_volumes.reshape(-1, 1)).reshape(X_volumes.shape)
         y_scaled = self.scaler_y.fit_transform(y)
 
-        return X_prices_scaled, X_volumes_scaled, y_scaled
+        return X_prices_open_scaled, X_prices_close_scaled, X_volumes_scaled, y_scaled
     
-    def merge_data(self, X_prices, X_volumes):
-        return np.concatenate((X_prices, X_volumes), axis=2)
+    def merge_data(self, X_prices_open, X_prices_close, X_volumes):
+        return np.concatenate((X_prices_open, X_prices_close, X_volumes), axis=2)
 
-    def build_model(self):
-        """
-        input_data = Input(shape=(self.window_size, 2))
-        x = LSTM(100, activation='relu', return_sequences=True)(input_data)
-        x = Dropout(0.2)(x)
-        LSTM2 = LSTM(50, activation='relu', return_sequences=False)(x)
-        dropout = Dropout(0.2)(LSTM2)
-
-        dense_1 = Dense(25, activation='relu')(dropout)
-        dropout = Dropout(0.2)(dense_1)
-        output = Dense(1)(dropout)
-
-        self.model = Model(inputs=input_data, outputs=output)
-        self.model.compile(optimizer='adam', loss='mse')
-        """	
-        
-        self.model = Sequential([
-            LSTM(50, activation='relu', return_sequences=True, input_shape=(self.window_size, 2)),
-            Dropout(0.2),
-            LSTM(50, activation='relu', return_sequences=False),
-            Dropout(0.2),
-            Dense(1)
-        ])
-
-        self.model.compile(optimizer='adam', loss='mse')
-
-    def train_model(self, params_scaled, y_scaled, epochs=500):
-        print('Training model...')
-        self.model.fit(params_scaled, y_scaled, epochs=epochs, verbose=0)
-
-    def scale_test_data(self, test_prices, test_volumes):
+    def scale_test_data(self, test_prices_open, test_prices_close, test_volumes):
         points_num = self.window_size
         #print('test_prices points:', points_num)
         # scale test data
-        test_prices_scaled = self.scaler_prices.transform(test_prices.reshape(-1, 1)).reshape(1, points_num, 1)
+        test_prices_open_scaled = self.scaler_prices.transform(test_prices_open.reshape(-1, 1)).reshape(1, points_num, 1)
+        test_prices_close_scaled = self.scaler_prices.transform(test_prices_close.reshape(-1, 1)).reshape(1, points_num, 1)
         test_volumes_scaled = self.scaler_volumes.transform(test_volumes.reshape(-1, 1)).reshape(1, points_num, 1)
-        return test_prices_scaled, test_volumes_scaled
-
-    def predict_next_value(self, params_scaled):
-        # predict
-        predicted_scaled_value = self.model.predict(params_scaled)
-        #print('predicted_scaled_value:', predicted_scaled_value.shape)
-        predicted_value = self.scaler_y.inverse_transform(predicted_scaled_value)
-        return predicted_value[0][0]
+        return test_prices_open_scaled, test_prices_close_scaled, test_volumes_scaled
 
     # Returns next trading date
     def get_next_trading_day(self):
@@ -150,4 +121,8 @@ class Stock_Predictor:
 
     def get_trading_range(self):
         return self.first_date, self.last_date
+    
+    def inverse_data(self, predicted_scaled_value):
+        predicted_value = self.scaler_y.inverse_transform(predicted_scaled_value)
+        return predicted_value[0][0]
     
