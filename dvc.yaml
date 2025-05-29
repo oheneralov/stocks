@@ -1,0 +1,16 @@
+stages:
+  train:
+    cmd: python train.py
+    deps:
+      - train.py
+      - data/train.csv
+    outs:
+      - models/model.pkl
+  evaluate:
+    cmd: python evaluate.py
+    deps:
+      - evaluate.py
+      - models/model.pkl
+      - data/test.csv
+    outs:
+      - logs/metrics.json

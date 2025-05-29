@@ -62,7 +62,19 @@ This will discover and run all the tests in the project.
     pip install --upgrade -r requirements.txt
     ```
 
-### Few words about recurrent networks
+## Few words about recurrent networks
+### Recurrent Neural Networks (RNNs)
+
+Recurrent Neural Networks (RNNs) are a class of neural networks designed for processing sequential data, such as time series, text, or speech. Unlike traditional feedforward networks, RNNs have connections that form cycles, allowing information to persist and be passed from one step of the sequence to the next.
+
+#### Types of RNNs
+
+- **Vanilla RNN**: The basic form of RNN, which can suffer from vanishing or exploding gradients when modeling long sequences.
+- **Long Short-Term Memory (LSTM)**: An advanced RNN variant that uses gates to better capture long-term dependencies and mitigate vanishing gradients.
+- **Gated Recurrent Unit (GRU)**: A simplified version of LSTM with fewer gates, often providing similar performance with less computational cost.
+- **Bidirectional RNN**: Processes sequences in both forward and backward directions, improving context understanding for certain tasks.
+
+RNNs are widely used for tasks like language modeling, sequence prediction, and time-series forecasting.
 In Keras (and most machine learning frameworks), input features for time-series data are combined 
  into a single 3D array with the shape:
 
@@ -70,11 +82,11 @@ In Keras (and most machine learning frameworks), input features for time-series 
 Samples: Number of sequences (how many training examples you have).
 Timesteps: Number of time steps per sequence.
 Features: Number of features at each time step.
-What is a "Timestep"?
+### What is a "Timestep"?
 A timestep represents the number of consecutive data points (from the past) that the model looks at to predict the next point.
 The reason we need the latest_sequence for prediction in time-series models is that recurrent networks like LSTM use past data (historical context) to make future predictions.
 
-Why is Historical Data Needed?
+### Why is Historical Data Needed?
 The network has learned patterns from past timesteps during training, so it expects a sequence as input to make predictions. If we only provide a single point (like "the current price"), the network wouldn't have enough context to generate accurate predictions.
 
 Analogy
@@ -104,3 +116,9 @@ If historical data is unavailable:
 
 Consider a simpler non-recurrent model, like a Dense/Feedforward network, which doesn't require sequences.
 Initialize with a constant sequence or a statistical guess for the missing timesteps.
+
+## TO  DO
+- Add airflow
+- ArgoCD
+- terraform
+- Spark for ELT

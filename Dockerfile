@@ -21,4 +21,4 @@ RUN pip install --upgrade pip && \
 COPY . .
 
 # Set default command
-CMD ["python", "main.py"]
+CMD ["python", "train.py"]
