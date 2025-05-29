@@ -117,6 +117,49 @@ If historical data is unavailable:
 Consider a simpler non-recurrent model, like a Dense/Feedforward network, which doesn't require sequences.
 Initialize with a constant sequence or a statistical guess for the missing timesteps.
 
+## Deploying to AWS ECS with Fargate
+cd terraform/
+terraform init
+terraform plan -var-file="terraform.tfvars"
+terraform apply -var-file="terraform.tfvars"
+
+## Build and push Docker image to ECR
+aws ecr get-login-password --region us-east-1 | \
+docker login --username AWS --password-stdin <ECR_REPO_URL>
+
+docker build -t mlops-rnn .
+docker tag mlops-rnn:latest <ECR_REPO_URL>:latest
+docker push <ECR_REPO_URL>:latest
+
+## Do NOT commit terraform.tfvars to Git if it includes sensitive data like secrets or credentials.
+
+## use Airflow (MWAA) as the orchestrator for tasks like:
+
+-Scheduling RNN training (daily/weekly)
+
+-Deploying model artifacts
+
+-Running batch predictions
+
+-Managing data ingestion and preprocessing
+
+### Terraform Setup for MWAA
+-Create an S3 bucket for DAGs and logs
+-Create an IAM role
+-Deploy MWAA environment
+-Upload your Airflow DAGs
+
+#### Upload DAGs and Dependencies
+Once the environment is created, upload your DAGs and Python packages:
+aws s3 cp dags/my_rnn_pipeline.py s3://<your-dag-bucket>/dags/
+aws s3 cp requirements.txt s3://<your-dag-bucket>/requirements.tx
+DAG (Directed Acyclic Graph) is a collection of tasks with dependencies and a defined execution order.
+It tells Airflow:
+What to do (e.g., preprocess → train → evaluate → deploy)
+When to do it (e.g., every day at midnight)
+In what order to do it (based on task dependencies)
+
+
 ## TO  DO
 - Add airflow
 - ArgoCD
